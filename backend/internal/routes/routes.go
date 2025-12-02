@@ -7,6 +7,10 @@ import (
 
 func SetupRoutes(app *fiber.App) {
 	app.Get("/health", handlers.HealthCheck)
+
 	app.Post("/register", handlers.Register)
-	app.Get("/users", handlers.GetAllUsers)
+	app.Post("/Login", handlers.Login)
+	app.Post("/products", handlers.AddProduct)
+	app.Post("/campaigns", handlers.AddCampaign)
+	app.Post("/product-categories", handlers.AddProductCategory)
 }

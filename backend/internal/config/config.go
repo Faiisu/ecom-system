@@ -14,7 +14,7 @@ type Config struct {
 }
 
 func LoadConfig() Config {
-	_ = godotenv.Load() // ถ้าไม่มีไฟล์ .env ก็ไม่ error
+	_ = godotenv.Load() // Load .env file if it exists
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -5,6 +5,29 @@ definitions:
       error:
         type: string
     type: object
+  handlers.LoginResponse:
+    properties:
+      Message:
+        type: string
+      user:
+        $ref: '#/definitions/handlers.RegisterUserPayload'
+    type: object
+  handlers.RegisterProduct:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      product_category_id:
+        type: string
+    type: object
+  handlers.RegisterProductCategory:
+    properties:
+      name:
+        type: string
+    type: object
   handlers.RegisterRequest:
     properties:
       email:
@@ -15,13 +38,6 @@ definitions:
         type: string
       password:
         type: string
-    type: object
-  handlers.RegisterResponse:
-    properties:
-      Message:
-        type: string
-      user:
-        $ref: '#/definitions/handlers.RegisterUserPayload'
     type: object
   handlers.RegisterUserPayload:
     properties:
@@ -34,33 +50,182 @@ definitions:
       last_name:
         type: string
     type: object
-  handlers.UsersResponse:
+  handlers.loginRequest:
     properties:
-      users:
-        items:
-          $ref: '#/definitions/models.User'
-        type: array
+      email:
+        type: string
+      password:
+        type: string
     type: object
-  models.User:
+  models.Campaign:
+    properties:
+      description:
+        type: string
+      discount_type:
+        description: '"percent", "fixed", "userPoint"'
+        type: string
+      discount_value:
+        type: number
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+    type: object
+  models.Product:
     properties:
       created_at:
         type: string
-      email:
-        type: string
-      first_name:
+      description:
         type: string
       id:
         type: string
-      last_name:
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      product_category_id:
+        type: string
+    type: object
+  models.ProductCategory:
+    properties:
+      id:
+        type: string
+      name:
         type: string
     type: object
 host: localhost:8080
 info:
   contact: {}
   description: API endpoints for registering users.
-  title: Playtorium Auth API
+  title: Ecom backend api
   version: "1.0"
 paths:
+  /Login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user with email and password.
+      parameters:
+      - description: Login payload
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Login a user
+      tags:
+      - Auth
+  /campaigns:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Campaign payload
+        in: body
+        name: campaign
+        required: true
+        schema:
+          $ref: '#/definitions/models.Campaign'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Campaign'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Create a new campaign
+      tags:
+      - Campaigns
+  /product-categories:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category payload
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterProductCategory'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ProductCategory'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Create a new product category
+      tags:
+      - Products
+  /products:
+    post:
+      consumes:
+      - application/json
+      description: Adds a product with category and optional description.
+      parameters:
+      - description: Product payload
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterProduct'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Create a new product
+      tags:
+      - Products
   /register:
     post:
       consumes:
@@ -79,7 +244,9 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.RegisterResponse'
+            additionalProperties:
+              type: string
+            type: object
         "400":
           description: Bad Request
           schema:
@@ -91,21 +258,4 @@ paths:
       summary: Register a new user
       tags:
       - Auth
-  /users:
-    get:
-      description: Returns a list of all registered users.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.UsersResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Get all users
-      tags:
-      - Users
 swagger: "2.0"
