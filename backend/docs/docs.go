@@ -668,6 +668,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "point": {
+                    "type": "integer"
                 }
             }
         },

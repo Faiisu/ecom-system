@@ -13,6 +13,7 @@ import (
 type GuestLoginResponse struct {
 	Message string `json:"Message"`
 	ID      string `json:"id"`
+	Point   int    `json:"point"`
 }
 
 type RegisterUserPayload struct {
@@ -45,6 +46,8 @@ func GuestRegister(c *fiber.Ctx) error {
 		Password_hash: "",
 		FirstName:     "Guest",
 		LastName:      "User",
+		Point:         100,
+		IsGuest:       true,
 		CreatedAt:     time.Now(),
 		LastLogin:     time.Now(),
 	}
@@ -59,6 +62,7 @@ func GuestRegister(c *fiber.Ctx) error {
 	resp := GuestLoginResponse{
 		Message: "User registered successfully",
 		ID:      guestID,
+		Point:   100,
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(resp)

@@ -27,6 +27,8 @@ definitions:
         type: string
       id:
         type: string
+      point:
+        type: integer
     type: object
   handlers.RegisterCampaign:
     properties:
