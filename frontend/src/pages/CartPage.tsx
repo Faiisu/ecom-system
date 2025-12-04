@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaShoppingBag } from 'react-icons/fa';
+import { FaShoppingBag, FaTrash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 interface CartItem {
@@ -47,6 +47,37 @@ const CartPage: React.FC = () => {
 
     const calculateTotal = () => {
         return cartItems.reduce((total, item) => total + (item.product_price * item.quantity), 0);
+    };
+
+    const handleDelete = async (productId: string) => {
+        const guestId = localStorage.getItem('guestId');
+        if (!guestId) return;
+
+        if (!window.confirm('Are you sure you want to remove this item?')) return;
+
+        try {
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+            const response = await fetch(`${backendUrl}/cart`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: guestId,
+                    product_id: productId,
+                }),
+            });
+
+            if (response.ok) {
+                setCartItems(prev => prev.filter(item => item.product_id !== productId));
+            } else {
+                console.error('Failed to delete item');
+                setError('Failed to delete item');
+            }
+        } catch (error) {
+            console.error('Error deleting item:', error);
+            setError('Error deleting item');
+        }
     };
 
     if (isLoading) {
@@ -114,6 +145,13 @@ const CartPage: React.FC = () => {
                                                 ${(item.product_price * item.quantity).toFixed(2)}
                                             </span>
                                         </div>
+                                        <button
+                                            onClick={() => handleDelete(item.product_id)}
+                                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                                            title="Remove item"
+                                        >
+                                            <FaTrash />
+                                        </button>
                                     </div>
                                 </div>
                             ))}

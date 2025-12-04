@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaBullhorn, FaCheck, FaPlus, FaTrash, FaPlay } from 'react-icons/fa';
+import { FaBullhorn, FaPlus, FaTrash, FaPlay } from 'react-icons/fa';
 import CampaignCategoriesModal from '../components/CampaignCategoriesModal';
 
 interface CampaignCategory {
@@ -19,11 +19,11 @@ interface Campaign {
     description: string;
     discount_type: string;
     discount_value: number;
-    start_at: string;
-    end_at: string;
+    every?: number;
+    limit?: number;
     is_active: boolean;
     campaign_category_id: string;
-    product_categories?: { id: string; name: string }[];
+    product_categories: { id: string; name: string }[];
 }
 
 const CampaignPage: React.FC = () => {
@@ -43,7 +43,7 @@ const CampaignPage: React.FC = () => {
     const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
@@ -93,7 +93,7 @@ const CampaignPage: React.FC = () => {
     const handleCreateCampaign = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        setMessage(null);
+
 
         try {
             const response = await fetch(`${backendUrl}/campaigns`, {
@@ -103,9 +103,9 @@ const CampaignPage: React.FC = () => {
                     name,
                     description,
                     discount_type: discountType,
-                    discount_value: discountValue,
-                    every: every,
-                    limit: limit,
+                    discount_value: discountValue ? parseFloat(discountValue) : 0,
+                    every: every ? parseFloat(every) : 0,
+                    limit: limit ? parseFloat(limit) : 0,
                     is_active: isActive,
                     campaign_category_id: categoryId,
                     list_product_category_id: selectedProductCategoryIds,
@@ -114,7 +114,7 @@ const CampaignPage: React.FC = () => {
 
             if (response.ok) {
                 await fetchCampaigns();
-                setMessage({ type: 'success', text: 'Campaign created successfully!' });
+
                 // Reset form
                 setName('');
                 setDescription('');
@@ -125,11 +125,11 @@ const CampaignPage: React.FC = () => {
                 setSelectedProductCategoryIds([]);
             } else {
                 const data = await response.json();
-                setMessage({ type: 'error', text: data.message || 'Failed to create campaign' });
+                console.error(data.message || 'Failed to create campaign');
             }
         } catch (error) {
             console.error('Error creating campaign:', error);
-            setMessage({ type: 'error', text: 'Error creating campaign' });
+
         } finally {
             setIsLoading(false);
         }
@@ -143,13 +143,13 @@ const CampaignPage: React.FC = () => {
 
             if (response.ok) {
                 await fetchCampaigns();
-                setMessage({ type: 'success', text: 'Campaign reactivated successfully!' });
+
             } else {
-                setMessage({ type: 'error', text: 'Failed to reactivate campaign' });
+                console.error('Failed to reactivate campaign');
             }
         } catch (error) {
             console.error('Error activating campaign:', error);
-            setMessage({ type: 'error', text: 'Error activating campaign' });
+
         }
     };
 
@@ -163,13 +163,13 @@ const CampaignPage: React.FC = () => {
 
             if (response.ok) {
                 await fetchCampaigns();
-                setMessage({ type: 'success', text: 'Campaign deleted successfully!' });
+
             } else {
-                setMessage({ type: 'error', text: 'Failed to delete campaign' });
+                console.error('Failed to delete campaign');
             }
         } catch (error) {
             console.error('Error deleting campaign:', error);
-            setMessage({ type: 'error', text: 'Error deleting campaign' });
+
         }
     };
 
@@ -180,14 +180,6 @@ const CampaignPage: React.FC = () => {
                     <h1 className="text-3xl font-extrabold text-gray-900">Campaign Management</h1>
                     <p className="mt-4 text-lg text-gray-500">Create and manage your marketing campaigns</p>
                 </div>
-
-                {message && (
-                    <div className={`p-4 rounded-lg flex items-center gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                        }`}>
-                        {message.type === 'success' ? <FaCheck /> : null}
-                        {message.text}
-                    </div>
-                )}
 
                 {/* Campaigns Section */}
                 <div className="space-y-6">
@@ -217,7 +209,6 @@ const CampaignPage: React.FC = () => {
                                                     <tr key={camp.id} className="hover:bg-gray-50">
                                                         <td className="px-6 py-4">
                                                             <div className="text-sm font-medium text-gray-900">{camp.name}</div>
-                                                            <div className="text-sm text-gray-500">{new Date(camp.start_at).toLocaleDateString()} - {new Date(camp.end_at).toLocaleDateString()}</div>
                                                         </td>
                                                         <td className="px-6 py-4 text-sm text-gray-500">
                                                             {category ? category.name : <span className="text-gray-400 italic">Unknown</span>}
@@ -236,7 +227,10 @@ const CampaignPage: React.FC = () => {
                                                             )}
                                                         </td>
                                                         <td className="px-6 py-4 text-sm text-gray-500">
-                                                            {camp.discount_type === 'percent' ? `${camp.discount_value}%` : `$${camp.discount_value}`}
+                                                            {camp.discount_type === 'percent' && `${camp.discount_value}%`}
+                                                            {camp.discount_type === 'fixed' && `$${camp.discount_value}`}
+                                                            {camp.discount_type === 'points' && `Points (Limit: ${camp.limit || 0}%)`}
+                                                            {camp.discount_type === 'spendAndSave' && `Spend $${camp.every}, Save $${camp.discount_value}`}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${camp.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
