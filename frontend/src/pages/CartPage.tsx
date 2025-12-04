@@ -55,9 +55,10 @@ const CartPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [discountData, setDiscountData] = useState<{ totalDiscount: number; breakdown: { id: string; name: string; amount: number }[] }>({ totalDiscount: 0, breakdown: [] });
+    const [discountData, setDiscountData] = useState<{ totalDiscount: number; breakdown: { id: string; name: string; amount: number }[]; pointsUsed: number }>({ totalDiscount: 0, breakdown: [], pointsUsed: 0 });
     const [finalTotal, setFinalTotal] = useState(0);
     const [subtotal, setSubtotal] = useState(0);
+    const [usedPoint, setUsedPoint] = useState(0);
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
 
@@ -213,8 +214,23 @@ const CartPage: React.FC = () => {
                 }
             }
         });
+
         setFinalTotal(workingItems.reduce((sum, item) => sum + item.current_unit_price * item.quantity, 0));
-        return { totalDiscount, breakdown };
+
+        // Calculate points used
+        let pointsUsed = 0;
+        currentCampaigns.forEach(campaign => {
+            if (campaign.discount_type === 'points') {
+                const breakdownItem = breakdown.find(b => b.id === campaign.id);
+                if (breakdownItem) {
+                    pointsUsed += breakdownItem.amount;
+                }
+            }
+        });
+
+        setUsedPoint(pointsUsed);
+
+        return { totalDiscount, breakdown, pointsUsed };
     };
 
     const handleApplyCampaigns = (newSelectedCampaigns: Campaign[]) => {
@@ -254,8 +270,56 @@ const CartPage: React.FC = () => {
         }
     };
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
+        const guestId = localStorage.getItem('guestId');
+        if (!guestId) {
+            alert('Please login to checkout');
+            return;
+        }
 
+        try {
+            const response = await fetch(`${backendUrl}/checkout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    campaign_ids: selectedCampaigns.map(c => c.id),
+                    user_id: guestId,
+                    point_used: usedPoint || 0,
+                }),
+            });
+
+            if (response.ok) {
+                alert('Checkout successful!');
+
+                // Deduct used points from localStorage
+                const currentPoints = parseInt(localStorage.getItem('guestPoints') || '0', 10);
+                const pointsToDeduct = usedPoint || 0;
+                const newPoints = Math.max(0, currentPoints - pointsToDeduct);
+                localStorage.setItem('guestPoints', newPoints.toString());
+
+                // Force a storage event for other components (optional but good practice)
+                window.dispatchEvent(new Event('storage'));
+
+                // Clear cart and state after successful checkout
+                setCartItems([]);
+                setSelectedCampaigns([]);
+                setDiscountData({ totalDiscount: 0, breakdown: [], pointsUsed: 0 });
+                setSubtotal(0);
+                setFinalTotal(0);
+                setUsedPoint(0);
+
+                // Force refresh browser
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                alert(`Checkout failed: ${data.message || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error during checkout:', error);
+            alert('An error occurred during checkout');
+        }
     };
 
     if (isLoading) {
