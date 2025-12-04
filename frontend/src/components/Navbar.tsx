@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaUser, FaChevronDown, FaSignOutAlt } from 'react-icons/fa';
+import { FaUser, FaChevronDown, FaSignOutAlt, FaShoppingCart } from 'react-icons/fa';
 
 const Navbar: React.FC = () => {
     const location = useLocation();
@@ -28,6 +28,13 @@ const Navbar: React.FC = () => {
                             className="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                         >
                             Campaign Manage
+                        </Link>
+                        <Link
+                            to="/cart"
+                            className="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                            <FaShoppingCart className="text-lg" />
+                            <span className="hidden sm:inline">Cart</span>
                         </Link>
                         {!isAuthPage && !localStorage.getItem('guestId') && (
                             <>

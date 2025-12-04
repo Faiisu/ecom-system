@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import FeaturedProducts from '../components/landingPage/FeaturedProducts';
-import Footer from '../components/landingPage/footer';
+import Footer from '../components/landingPage/Footer';
 import CreateProduct from './CreateProduct';
 import { FaPlus } from 'react-icons/fa';
 
