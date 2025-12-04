@@ -21,6 +21,22 @@ interface CampaignCategory {
     rank?: number;
 }
 
+interface CartItem {
+    _id: string;
+    id: string;
+    product_id: string;
+    product_name: string;
+    product_price: number;
+    quantity: number;
+}
+
+interface Product {
+    id: string;
+    name: string;
+    price: number;
+    product_category_id: string;
+}
+
 interface CampaignSelectionModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -28,9 +44,12 @@ interface CampaignSelectionModalProps {
     categories: CampaignCategory[];
     onApply: (selected: Campaign[]) => void;
     initialSelected: Campaign[];
+    cartItems: CartItem[];
+    products: Product[];
+    subtotal: number;
 }
 
-const CampaignSelectionModal: React.FC<CampaignSelectionModalProps> = ({ isOpen, onClose, campaigns, categories, onApply, initialSelected }) => {
+const CampaignSelectionModal: React.FC<CampaignSelectionModalProps> = ({ isOpen, onClose, campaigns, categories, onApply, initialSelected, cartItems, products, subtotal }) => {
     const [selected, setSelected] = useState<Campaign[]>(initialSelected);
 
     useEffect(() => {
@@ -59,9 +78,16 @@ const CampaignSelectionModal: React.FC<CampaignSelectionModalProps> = ({ isOpen,
     };
 
     const handleApply = () => {
-        onApply(selected);
+        // Sort selected campaigns by category rank before applying
+        const sortedSelected = [...selected].sort((a, b) => {
+            const catA = categories.find(c => c.id === a.campaign_category_id);
+            const catB = categories.find(c => c.id === b.campaign_category_id);
+            return (catA?.rank || 0) - (catB?.rank || 0);
+        });
+        onApply(sortedSelected);
         onClose();
     };
+
 
     // Group campaigns by category
     const campaignsByCategory = campaigns.reduce((acc, campaign) => {
@@ -73,8 +99,12 @@ const CampaignSelectionModal: React.FC<CampaignSelectionModalProps> = ({ isOpen,
         return acc;
     }, {} as Record<string, Campaign[]>);
 
-    // Sort categories by rank
-    const sortedCategories = [...categories].sort((a, b) => (a.rank || 0) - (b.rank || 0));
+    // Sort categories by rank (low to high)
+    const sortedCategories = [...categories].sort((a, b) => {
+        const rankA = a.rank !== undefined ? a.rank : 0;
+        const rankB = b.rank !== undefined ? b.rank : 0;
+        return rankA - rankB;
+    });
 
     if (!isOpen) return null;
 

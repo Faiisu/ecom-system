@@ -12,6 +12,13 @@ interface CartItem {
     quantity: number;
 }
 
+interface Product {
+    id: string;
+    name: string;
+    price: number;
+    product_category_id: string;
+}
+
 interface Campaign {
     id: string;
     name: string;
@@ -32,16 +39,32 @@ interface CampaignCategory {
     rank?: number;
 }
 
+interface ProductCategory {
+    id: string;
+    name: string;
+}
+
 const CartPage: React.FC = () => {
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [categories, setCategories] = useState<CampaignCategory[]>([]);
+    const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
     const [selectedCampaigns, setSelectedCampaigns] = useState<Campaign[]>([]);
     const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const [discountData, setDiscountData] = useState<{ totalDiscount: number; breakdown: { id: string; name: string; amount: number }[] }>({ totalDiscount: 0, breakdown: [] });
+    const [finalTotal, setFinalTotal] = useState(0);
+    const [subtotal, setSubtotal] = useState(0);
+
     const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+
+    const getSubtotal = () => {
+        const subtotal = cartItems.reduce((total, item) => total + (item.product_price * item.quantity), 0);
+        return subtotal;
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -51,6 +74,7 @@ const CartPage: React.FC = () => {
                 return;
             }
 
+
             try {
                 // Fetch Cart
                 const cartResponse = await fetch(`${backendUrl}/cart/${guestId}`);
@@ -59,11 +83,25 @@ const CartPage: React.FC = () => {
                     setCartItems(Array.isArray(cartData) ? cartData : []);
                 }
 
+                // Fetch Products (to get category info)
+                const productsResponse = await fetch(`${backendUrl}/products`);
+                if (productsResponse.ok) {
+                    const productsData = await productsResponse.json();
+                    setProducts(Array.isArray(productsData) ? productsData : []);
+                }
+
                 // Fetch Categories
                 const categoriesResponse = await fetch(`${backendUrl}/campaign-categories`);
                 if (categoriesResponse.ok) {
                     const categoriesData = await categoriesResponse.json();
                     setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+                }
+
+                // Fetch Product Categories
+                const productCategoriesResponse = await fetch(`${backendUrl}/product-categories`);
+                if (productCategoriesResponse.ok) {
+                    const productCategoriesData = await productCategoriesResponse.json();
+                    setProductCategories(Array.isArray(productCategoriesData) ? productCategoriesData : []);
                 }
 
                 // Fetch Campaigns
@@ -88,8 +126,102 @@ const CartPage: React.FC = () => {
         fetchData();
     }, []);
 
-    const calculateTotal = () => {
-        return cartItems.reduce((total, item) => total + (item.product_price * item.quantity), 0);
+    useEffect(() => {
+        setSubtotal(getSubtotal());
+        setFinalTotal(subtotal);
+    }, [cartItems]);
+
+    const calculateDiscount = (currentCampaigns: Campaign[], currentCartItems: CartItem[]) => {
+        let totalDiscount = 0;
+        const breakdown: { id: string; name: string; amount: number }[] = [];
+
+        // Create a working copy with mutable current_price
+        let workingItems = currentCartItems.map(item => ({
+            ...item,
+            current_unit_price: item.product_price
+        }));
+
+        currentCampaigns.forEach(campaign => {
+            // 1. Identify eligible items for this campaign
+            const eligibleIndices: number[] = [];
+
+            workingItems.forEach((item, index) => {
+                // If campaign has no specific product categories, it applies to all
+                if (!campaign.product_categories || campaign.product_categories.length === 0) {
+                    eligibleIndices.push(index);
+                    return;
+                }
+                // Find product details to check category
+                const product = products.find(p => p.id === item.product_id);
+                if (!product) return;
+
+                // Check if product's category is in the campaign's target list
+                if (campaign.product_categories.some(pc => pc.id === product.product_category_id)) {
+                    eligibleIndices.push(index);
+                }
+            });
+
+            // 2. Calculate base amount from eligible items using CURRENT price
+            const eligibleAmount = eligibleIndices.reduce((sum, index) => {
+                const item = workingItems[index];
+                return sum + (item.current_unit_price * item.quantity);
+            }, 0);
+
+            if (eligibleAmount > 0) {
+                let discountAmount = 0;
+
+                switch (campaign.discount_type) {
+                    case 'fixed':
+                        discountAmount = campaign.discount_value;
+                        if (eligibleAmount < discountAmount) discountAmount = eligibleAmount;
+                        break;
+                    case 'percent':
+                        discountAmount = (eligibleAmount * campaign.discount_value) / 100;
+                        break;
+                    case 'spendAndSave':
+                        if (campaign.every && campaign.every > 0) {
+                            const times = Math.floor(eligibleAmount / campaign.every);
+                            discountAmount = times * campaign.discount_value;
+                        }
+                        break;
+                    case 'points':
+                        const guestPointsStr = localStorage.getItem('guestPoints');
+                        let AvaliablePoint = guestPointsStr ? parseInt(guestPointsStr, 10) : 0;
+
+                        if (campaign.limit !== undefined && (AvaliablePoint / subtotal) * 100 > campaign.limit) {
+                            AvaliablePoint = campaign.limit * subtotal / 100;
+                        }
+                        discountAmount = AvaliablePoint;
+                        break;
+                }
+
+                // Ensure discount doesn't exceed eligible amount
+                discountAmount = Math.min(discountAmount, eligibleAmount);
+
+                if (discountAmount > 0) {
+                    totalDiscount += discountAmount;
+                    breakdown.push({ id: campaign.id, name: campaign.name, amount: discountAmount });
+
+                    // DISTRIBUTE DISCOUNT
+                    const ratio = discountAmount / eligibleAmount;
+
+                    eligibleIndices.forEach(index => {
+                        const item = workingItems[index];
+                        // Reduce price by ratio
+                        item.current_unit_price = item.current_unit_price * (1 - ratio);
+                    });
+                }
+            }
+        });
+        setFinalTotal(workingItems.reduce((sum, item) => sum + item.current_unit_price * item.quantity, 0));
+        return { totalDiscount, breakdown };
+    };
+
+    const handleApplyCampaigns = (newSelectedCampaigns: Campaign[]) => {
+        setSelectedCampaigns(newSelectedCampaigns);
+        const result = calculateDiscount(newSelectedCampaigns, cartItems);
+        setDiscountData(result);
+        setIsCampaignModalOpen(false);
     };
 
     const handleDelete = async (productId: string) => {
@@ -122,6 +254,10 @@ const CartPage: React.FC = () => {
         }
     };
 
+    const handleCheckout = () => {
+
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -142,6 +278,25 @@ const CartPage: React.FC = () => {
             </div>
         );
     }
+
+    const getCategoryTotals = () => {
+        const totals: Record<string, number> = {};
+
+        cartItems.forEach(item => {
+            const product = products.find(p => p.id === item.product_id);
+            if (product) {
+                const category = productCategories.find(c => c.id === product.product_category_id);
+                const categoryName = category ? category.name : 'Uncategorized';
+                const itemTotal = item.product_price * item.quantity;
+                totals[categoryName] = (totals[categoryName] || 0) + itemTotal;
+            }
+        });
+
+        return Object.entries(totals).map(([name, total]) => ({ name, total }));
+    };
+
+    const { totalDiscount, breakdown } = discountData;
+    const categoryTotals = getCategoryTotals();
 
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -204,24 +359,28 @@ const CartPage: React.FC = () => {
                             <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-8">
                                 <h2 className="text-lg font-bold text-gray-900 mb-6">Order Summary</h2>
                                 <div className="space-y-4 mb-6">
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Subtotal</span>
-                                        <span>฿{calculateTotal().toFixed(2)}</span>
+                                    {/* Category Totals */}
+                                    <div className="space-y-2 pb-4 border-gray-100">
+                                        {categoryTotals.map((cat) => (
+                                            <div key={cat.name} className="flex justify-between text-gray-600 text-sm">
+                                                <span>{cat.name}</span>
+                                                <span>฿{cat.total.toFixed(2)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-between text-gray-600 text-sm">
+                                        <span>SubTotal</span>
+                                        <span>฿{subtotal.toFixed(2)}</span>
                                     </div>
 
                                     {/* Selected Campaigns */}
-                                    {selectedCampaigns.length > 0 && (
+                                    {breakdown.length > 0 && (
                                         <div className="border-t border-gray-100 pt-4 space-y-2">
                                             <p className="text-sm font-medium text-gray-900">Applied Discounts:</p>
-                                            {selectedCampaigns.map(camp => (
-                                                <div key={camp.id} className="flex justify-between text-sm text-green-600">
-                                                    <span>{camp.name}</span>
-                                                    <span>
-                                                        {camp.discount_type === 'percent' && `-${camp.discount_value}%`}
-                                                        {camp.discount_type === 'fixed' && `-฿${camp.discount_value}`}
-                                                        {camp.discount_type === 'spendAndSave' && `Spend ฿${camp.every}, Save ฿${camp.discount_value}`}
-                                                        {camp.discount_type === 'points' && `Points`}
-                                                    </span>
+                                            {breakdown.map(b => (
+                                                <div key={b.id} className="flex justify-between text-sm text-green-600">
+                                                    <span>{b.name}</span>
+                                                    <span>-฿{b.amount.toFixed(2)}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -229,7 +388,7 @@ const CartPage: React.FC = () => {
 
                                     <div className="border-t border-gray-100 pt-4 flex justify-between text-lg font-bold text-gray-900">
                                         <span>Total</span>
-                                        <span>฿{calculateTotal().toFixed(2)}</span>
+                                        <span>฿{finalTotal.toFixed(2)}</span>
                                     </div>
                                 </div>
 
@@ -241,7 +400,7 @@ const CartPage: React.FC = () => {
                                     {selectedCampaigns.length > 0 ? 'Manage Coupons' : 'Apply Coupon'}
                                 </button>
 
-                                <button className="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                                <button onClick={() => handleCheckout()} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
                                     Checkout
                                 </button>
                             </div>
@@ -255,8 +414,11 @@ const CartPage: React.FC = () => {
                 onClose={() => setIsCampaignModalOpen(false)}
                 campaigns={campaigns}
                 categories={categories}
-                onApply={setSelectedCampaigns}
+                onApply={handleApplyCampaigns}
                 initialSelected={selectedCampaigns}
+                cartItems={cartItems}
+                products={products}
+                subtotal={subtotal}
             />
         </div>
     );
