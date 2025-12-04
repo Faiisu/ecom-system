@@ -56,7 +56,7 @@ func AddProduct(c *fiber.Ctx) error {
 	defer cancel()
 
 	var existing models.Product
-	err := db.ProductCollection.FindOne(ctx, bson.M{"name": req.Name}).Decode(&existing)
+	err := db.ProductCollection.FindOne(ctx, bson.M{"Name": req.Name}).Decode(&existing)
 	if err == nil {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Product name already registered"})
 	}
@@ -65,7 +65,7 @@ func AddProduct(c *fiber.Ctx) error {
 	}
 
 	// Insert into database
-	_, err = db.ProductCollection.InsertOne(ctx, product)
+	_, err = db.ProductCollection.InsertOne(context.Background(), product)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Failed to create product"})
 	}

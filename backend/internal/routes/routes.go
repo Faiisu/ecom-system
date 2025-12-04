@@ -8,8 +8,7 @@ import (
 func SetupRoutes(app *fiber.App) {
 	app.Get("/health", handlers.HealthCheck)
 
-	app.Post("/register", handlers.Register)
-	app.Post("/Login", handlers.Login)
+	app.Get("/guestlogin", handlers.GuestRegister)
 	app.Post("/products", handlers.AddProduct)
 	app.Get("/products", handlers.GetProducts)
 	app.Post("/campaigns", handlers.AddCampaign)
