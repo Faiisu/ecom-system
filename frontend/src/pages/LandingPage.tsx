@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import FeaturedProducts from '../components/landingPage/FeaturedProducts';
+import Footer from '../components/landingPage/footer';
 import CreateProduct from './CreateProduct';
 import { FaPlus } from 'react-icons/fa';
 
@@ -9,6 +10,7 @@ const LandingPage: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col relative">
             <FeaturedProducts />
+            <Footer />
 
             {/* Floating Action Button for Create Product */}
             <button

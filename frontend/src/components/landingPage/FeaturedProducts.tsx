@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface Product {
     id: string;
@@ -9,6 +10,7 @@ interface Product {
 }
 
 const FeaturedProducts: React.FC = () => {
+    const navigate = useNavigate();
     const [products, setProducts] = React.useState<Product[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
@@ -59,6 +61,39 @@ const FeaturedProducts: React.FC = () => {
         );
     }
 
+    const addToCart = async (productId: string) => {
+        const guestId = localStorage.getItem('guestId');
+        if (!guestId) {
+            navigate('/login');
+            return;
+        }
+
+        try {
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+            const response = await fetch(`${backendUrl}/cart`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: 1,
+                    user_id: guestId,
+                }),
+            });
+
+            if (response.ok) {
+                alert('Product added to cart!');
+            } else {
+                const data = await response.json();
+                alert(data.message || 'Failed to add to cart');
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            alert('An error occurred while adding to cart');
+        }
+    };
+
     return (
         <section className="py-16 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,7 +119,10 @@ const FeaturedProducts: React.FC = () => {
                                 </h3>
                                 <div className="flex items-center justify-between mt-4">
                                     <span className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</span>
-                                    <button className="p-2 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors">
+                                    <button
+                                        onClick={() => addToCart(product.id)}
+                                        className="p-2 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors"
+                                    >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                         </svg>

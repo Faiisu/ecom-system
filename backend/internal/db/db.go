@@ -18,6 +18,7 @@ var (
 	CampaignCollection               *mongo.Collection
 	CampaignCategoryCollection       *mongo.Collection
 	CampaignTargetCategoryCollection *mongo.Collection
+	CartCollection                   *mongo.Collection
 )
 
 func ConnectMongo(mongoURL, dbName string) error {
@@ -55,6 +56,7 @@ func ConnectMongo(mongoURL, dbName string) error {
 	CategoryCollection = db.Collection("ProductCategories")
 	CampaignCategoryCollection = db.Collection("CampaignCategories")
 	CampaignTargetCategoryCollection = db.Collection("CampaignTargetCategories")
+	CartCollection = db.Collection("cart_items")
 
 	return nil
 }

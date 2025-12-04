@@ -1,46 +1,8 @@
 import React, { useState } from 'react';
-import { FaArrowRight, FaEnvelope, FaLock } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { FaArrowRight } from 'react-icons/fa';
 
 const Login: React.FC = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-
-        try {
-            const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
-            const response = await fetch(`${backendUrl}/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
-            });
-
-            if (response.ok) {
-                // Handle success - e.g., store token, redirect to home
-                // const data = await response.json();
-                // localStorage.setItem('token', data.token);
-                window.location.href = '/';
-            } else {
-                // Handle error
-                const data = await response.json();
-                alert(data.message || 'Login failed');
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-            alert('An error occurred during login');
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     return (
         <div className="min-h-screen w-full flex relative overflow-hidden bg-white">

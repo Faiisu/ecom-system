@@ -1,5 +1,14 @@
 basePath: /
 definitions:
+  handlers.AddCartItemRequest:
+    properties:
+      product_id:
+        type: string
+      quantity:
+        type: integer
+      user_id:
+        type: string
+    type: object
   handlers.ErrorResponse:
     properties:
       error:
@@ -91,6 +100,17 @@ definitions:
       id:
         type: string
       name:
+        type: string
+    type: object
+  models.CartItem:
+    properties:
+      id:
+        type: string
+      product_id:
+        type: string
+      quantity:
+        type: integer
+      user_id:
         type: string
     type: object
   models.Product:
@@ -284,6 +304,37 @@ paths:
       summary: Activate a campaign
       tags:
       - Campaigns
+  /cart:
+    post:
+      consumes:
+      - application/json
+      description: Adds a product to the user's cart or updates quantity if it already
+        exists
+      parameters:
+      - description: Cart Item payload
+        in: body
+        name: cartItem
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AddCartItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CartItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Add item to cart
+      tags:
+      - Cart
   /guestregister:
     post:
       consumes:
