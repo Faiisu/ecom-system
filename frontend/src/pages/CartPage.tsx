@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { FaShoppingBag, FaTrash } from 'react-icons/fa';
+import { FaShoppingBag, FaTrash, FaTag } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import CampaignSelectionModal from '../components/CampaignSelectionModal';
 
 interface CartItem {
     _id: string;
@@ -11,13 +12,39 @@ interface CartItem {
     quantity: number;
 }
 
+interface Campaign {
+    id: string;
+    name: string;
+    description: string;
+    discount_type: string;
+    discount_value: number;
+    every?: number;
+    limit?: number;
+    is_active: boolean;
+    campaign_category_id: string;
+    product_categories: { id: string; name: string }[];
+}
+
+interface CampaignCategory {
+    id: string;
+    name: string;
+    description: string;
+    rank?: number;
+}
+
 const CartPage: React.FC = () => {
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    const [categories, setCategories] = useState<CampaignCategory[]>([]);
+    const [selectedCampaigns, setSelectedCampaigns] = useState<Campaign[]>([]);
+    const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+
     useEffect(() => {
-        const fetchCart = async () => {
+        const fetchData = async () => {
             const guestId = localStorage.getItem('guestId');
             if (!guestId) {
                 setIsLoading(false);
@@ -25,24 +52,40 @@ const CartPage: React.FC = () => {
             }
 
             try {
-                const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
-                const response = await fetch(`${backendUrl}/cart/${guestId}`);
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch cart');
+                // Fetch Cart
+                const cartResponse = await fetch(`${backendUrl}/cart/${guestId}`);
+                if (cartResponse.ok) {
+                    const cartData = await cartResponse.json();
+                    setCartItems(Array.isArray(cartData) ? cartData : []);
                 }
 
-                const data = await response.json();
-                setCartItems(Array.isArray(data) ? data : []);
+                // Fetch Categories
+                const categoriesResponse = await fetch(`${backendUrl}/campaign-categories`);
+                if (categoriesResponse.ok) {
+                    const categoriesData = await categoriesResponse.json();
+                    setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+                }
+
+                // Fetch Campaigns
+                const campaignsResponse = await fetch(`${backendUrl}/campaigns`);
+                if (campaignsResponse.ok) {
+                    const campaignsData = await campaignsResponse.json();
+                    // Filter only active campaigns
+                    const activeCampaigns = Array.isArray(campaignsData)
+                        ? campaignsData.filter((c: Campaign) => c.is_active)
+                        : [];
+                    setCampaigns(activeCampaigns);
+                }
+
             } catch (err) {
-                console.error('Error fetching cart:', err);
-                setError('Failed to load cart items');
+                console.error('Error fetching data:', err);
+                setError('Failed to load cart data');
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchCart();
+        fetchData();
     }, []);
 
     const calculateTotal = () => {
@@ -56,7 +99,6 @@ const CartPage: React.FC = () => {
         if (!window.confirm('Are you sure you want to remove this item?')) return;
 
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
             const response = await fetch(`${backendUrl}/cart`, {
                 method: 'DELETE',
                 headers: {
@@ -166,15 +208,39 @@ const CartPage: React.FC = () => {
                                         <span>Subtotal</span>
                                         <span>${calculateTotal().toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Shipping</span>
-                                        <span>Free</span>
-                                    </div>
+
+                                    {/* Selected Campaigns */}
+                                    {selectedCampaigns.length > 0 && (
+                                        <div className="border-t border-gray-100 pt-4 space-y-2">
+                                            <p className="text-sm font-medium text-gray-900">Applied Discounts:</p>
+                                            {selectedCampaigns.map(camp => (
+                                                <div key={camp.id} className="flex justify-between text-sm text-green-600">
+                                                    <span>{camp.name}</span>
+                                                    <span>
+                                                        {camp.discount_type === 'percent' && `-${camp.discount_value}%`}
+                                                        {camp.discount_type === 'fixed' && `-$${camp.discount_value}`}
+                                                        {camp.discount_type === 'spendAndSave' && `Spend $${camp.every}, Save $${camp.discount_value}`}
+                                                        {camp.discount_type === 'points' && `Points`}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <div className="border-t border-gray-100 pt-4 flex justify-between text-lg font-bold text-gray-900">
                                         <span>Total</span>
                                         <span>${calculateTotal().toFixed(2)}</span>
                                     </div>
                                 </div>
+
+                                <button
+                                    onClick={() => setIsCampaignModalOpen(true)}
+                                    className="w-full mb-3 bg-indigo-50 text-indigo-700 py-3 rounded-xl font-semibold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <FaTag />
+                                    {selectedCampaigns.length > 0 ? 'Manage Coupons' : 'Apply Coupon'}
+                                </button>
+
                                 <button className="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
                                     Checkout
                                 </button>
@@ -183,6 +249,15 @@ const CartPage: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            <CampaignSelectionModal
+                isOpen={isCampaignModalOpen}
+                onClose={() => setIsCampaignModalOpen(false)}
+                campaigns={campaigns}
+                categories={categories}
+                onApply={setSelectedCampaigns}
+                initialSelected={selectedCampaigns}
+            />
         </div>
     );
 };
