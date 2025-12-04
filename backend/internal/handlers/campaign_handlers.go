@@ -14,20 +14,21 @@ import (
 )
 
 type RegisterCampaign struct {
-	Name                  string    `json:"name"`
-	Description           string    `json:"description"`
-	DiscountType          string    `json:"discount_type"`
-	DiscountValue         float64   `json:"discount_value"`
-	CampaignCategoryID    string    `json:"campaign_category_id"`
-	IsActive              bool      `json:"is_active"`
-	StartAt               time.Time `json:"start_at"`
-	EndAt                 time.Time `json:"end_at"`
-	ListProductCategoryID []string  `json:"list_product_category_id"`
+	Name                  string   `json:"name"`
+	Description           string   `json:"description"`
+	DiscountType          string   `json:"discount_type"`
+	DiscountValue         float64  `json:"discount_value"`
+	Limit                 float64  `json:"limit"`
+	Every                 float64  `json:"every"`
+	CampaignCategoryID    string   `json:"campaign_category_id"`
+	IsActive              bool     `json:"is_active"`
+	ListProductCategoryID []string `json:"list_product_category_id"`
 }
 
 type RegisterCampaignCategory struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Rank        int    `json:"rank"`
 }
 
 // AddCampaign godoc
@@ -55,10 +56,10 @@ func AddCampaign(c *fiber.Ctx) error {
 		Description:        req.Description,
 		DiscountType:       req.DiscountType,
 		DiscountValue:      req.DiscountValue,
+		Limit:              req.Limit,
+		Every:              req.Every,
 		CampaignCategoryID: req.CampaignCategoryID,
 		IsActive:           req.IsActive,
-		StartAt:            req.StartAt,
-		EndAt:              req.EndAt,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

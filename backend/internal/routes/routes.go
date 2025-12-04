@@ -22,4 +22,5 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/campaign-categories", handlers.GetCampaignCategories)
 	app.Post("/cart", handlers.AddCartItem)
 	app.Get("/cart/:user_id", handlers.GetCartItems)
+	app.Delete("/cart", handlers.DeleteCartItem)
 }

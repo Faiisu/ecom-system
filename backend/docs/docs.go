@@ -301,6 +301,53 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "Removes a product from the user's cart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Remove item from cart",
+                "parameters": [
+                    {
+                        "description": "Delete Cart Item payload",
+                        "name": "cartItem",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeleteCartItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/cart/{user_id}": {
@@ -594,6 +641,17 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.DeleteCartItemRequest": {
+            "type": "object",
+            "properties": {
+                "product_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -628,11 +686,14 @@ const docTemplate = `{
                 "discount_value": {
                     "type": "number"
                 },
-                "end_at": {
-                    "type": "string"
+                "every": {
+                    "type": "number"
                 },
                 "is_active": {
                     "type": "boolean"
+                },
+                "limit": {
+                    "type": "number"
                 },
                 "list_product_category_id": {
                     "type": "array",
@@ -641,9 +702,6 @@ const docTemplate = `{
                     }
                 },
                 "name": {
-                    "type": "string"
-                },
-                "start_at": {
                     "type": "string"
                 }
             }
@@ -656,6 +714,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
                 }
             }
         },
@@ -694,20 +755,23 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "discount_type": {
-                    "description": "\"percent\", \"fixed\", \"userPoint\"",
+                    "description": "\"percent\", \"fixed\", \"point\", \"spendAndSave\"",
                     "type": "string"
                 },
                 "discount_value": {
                     "type": "number"
                 },
-                "end_at": {
-                    "type": "string"
+                "every": {
+                    "type": "number"
                 },
                 "id": {
                     "type": "string"
                 },
                 "is_active": {
                     "type": "boolean"
+                },
+                "limit": {
+                    "type": "number"
                 },
                 "name": {
                     "type": "string"
@@ -717,9 +781,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.ProductCategory"
                     }
-                },
-                "start_at": {
-                    "type": "string"
                 }
             }
         },
@@ -734,6 +795,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
                 }
             }
         },

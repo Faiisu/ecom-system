@@ -136,3 +136,49 @@ func GetCartItems(c *fiber.Ctx) error {
 
 	return c.JSON(results)
 }
+
+type DeleteCartItemRequest struct {
+	UserID    string `json:"user_id"`
+	ProductID string `json:"product_id"`
+}
+
+// DeleteCartItem godoc
+// @Summary Remove item from cart
+// @Description Removes a product from the user's cart
+// @Tags Cart
+// @Accept json
+// @Produce json
+// @Param cartItem body DeleteCartItemRequest true "Delete Cart Item payload"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /cart [delete]
+func DeleteCartItem(c *fiber.Ctx) error {
+	var req DeleteCartItemRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Invalid request body"})
+	}
+
+	if req.UserID == "" || req.ProductID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "user_id and product_id are required"})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"user_id":    req.UserID,
+		"product_id": req.ProductID,
+	}
+
+	result, err := db.CartCollection.DeleteOne(ctx, filter)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Failed to delete cart item"})
+	}
+
+	if result.DeletedCount == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{Error: "Item not found in cart"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Item removed from cart"})
+}

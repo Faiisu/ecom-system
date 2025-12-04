@@ -9,6 +9,13 @@ definitions:
       user_id:
         type: string
     type: object
+  handlers.DeleteCartItemRequest:
+    properties:
+      product_id:
+        type: string
+      user_id:
+        type: string
+    type: object
   handlers.ErrorResponse:
     properties:
       error:
@@ -31,17 +38,17 @@ definitions:
         type: string
       discount_value:
         type: number
-      end_at:
-        type: string
+      every:
+        type: number
       is_active:
         type: boolean
+      limit:
+        type: number
       list_product_category_id:
         items:
           type: string
         type: array
       name:
-        type: string
-      start_at:
         type: string
     type: object
   handlers.RegisterCampaignCategory:
@@ -50,6 +57,8 @@ definitions:
         type: string
       name:
         type: string
+      rank:
+        type: integer
     type: object
   handlers.RegisterProduct:
     properties:
@@ -74,24 +83,24 @@ definitions:
       description:
         type: string
       discount_type:
-        description: '"percent", "fixed", "userPoint"'
+        description: '"percent", "fixed", "point", "spendAndSave"'
         type: string
       discount_value:
         type: number
-      end_at:
-        type: string
+      every:
+        type: number
       id:
         type: string
       is_active:
         type: boolean
+      limit:
+        type: number
       name:
         type: string
       product_categories:
         items:
           $ref: '#/definitions/models.ProductCategory'
         type: array
-      start_at:
-        type: string
     type: object
   models.CampaignsCategories:
     properties:
@@ -101,6 +110,8 @@ definitions:
         type: string
       name:
         type: string
+      rank:
+        type: integer
     type: object
   models.CartItem:
     properties:
@@ -305,6 +316,37 @@ paths:
       tags:
       - Campaigns
   /cart:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a product from the user's cart
+      parameters:
+      - description: Delete Cart Item payload
+        in: body
+        name: cartItem
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DeleteCartItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Remove item from cart
+      tags:
+      - Cart
     post:
       consumes:
       - application/json
