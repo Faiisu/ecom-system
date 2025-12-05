@@ -359,7 +359,7 @@ const CartPage: React.FC = () => {
         return Object.entries(totals).map(([name, total]) => ({ name, total }));
     };
 
-    const { totalDiscount, breakdown } = discountData;
+    const { breakdown } = discountData;
     const categoryTotals = getCategoryTotals();
 
     return (

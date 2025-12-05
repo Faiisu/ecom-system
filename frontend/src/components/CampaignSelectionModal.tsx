@@ -49,7 +49,7 @@ interface CampaignSelectionModalProps {
     subtotal: number;
 }
 
-const CampaignSelectionModal: React.FC<CampaignSelectionModalProps> = ({ isOpen, onClose, campaigns, categories, onApply, initialSelected, cartItems, products, subtotal }) => {
+const CampaignSelectionModal: React.FC<CampaignSelectionModalProps> = ({ isOpen, onClose, campaigns, categories, onApply, initialSelected }) => {
     const [selected, setSelected] = useState<Campaign[]>(initialSelected);
 
     useEffect(() => {
