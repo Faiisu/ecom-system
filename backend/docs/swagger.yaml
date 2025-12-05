@@ -48,6 +48,13 @@ definitions:
       point:
         type: integer
     type: object
+  handlers.RealignCategoryRequest:
+    properties:
+      category_id:
+        type: string
+      rank:
+        type: integer
+    type: object
   handlers.RegisterCampaign:
     properties:
       campaign_category_id:
@@ -170,7 +177,7 @@ definitions:
       name:
         type: string
     type: object
-host: localhost:8080
+host: localhost:8081
 info:
   contact: {}
   description: API endpoints for registering users.
@@ -223,6 +230,40 @@ paths:
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
       summary: Create a new campaign category
+      tags:
+      - Campaigns
+  /campaign-categories/realign:
+    patch:
+      consumes:
+      - application/json
+      description: Update ranks for multiple campaign categories
+      parameters:
+      - description: List of categories with new ranks
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/handlers.RealignCategoryRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Realign campaign category ranks
       tags:
       - Campaigns
   /campaigns:

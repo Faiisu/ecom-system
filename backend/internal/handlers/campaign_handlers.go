@@ -257,3 +257,55 @@ func GetCampaignCategories(c *fiber.Ctx) error {
 
 	return c.JSON(categories)
 }
+
+type RealignCategoryRequest struct {
+	CategoryID string `json:"category_id"`
+	Rank       int    `json:"rank"`
+}
+
+// RealignCampaignCategoryRanks godoc
+// @Summary Realign campaign category ranks
+// @Description Update ranks for multiple campaign categories
+// @Tags Campaigns
+// @Accept json
+// @Produce json
+// @Param body body []RealignCategoryRequest true "List of categories with new ranks"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /campaign-categories/realign [patch]
+func RealignCampaignCategoryRanks(c *fiber.Ctx) error {
+	var req []RealignCategoryRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Invalid request body"})
+	}
+
+	if len(req) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Request body cannot be empty"})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Use a transaction or bulk write for atomicity if possible, but for now we'll iterate
+	// MongoDB bulk write is better here
+	var writes []mongo.WriteModel
+	for _, item := range req {
+		if item.CategoryID == "" {
+			continue
+		}
+		model := mongo.NewUpdateOneModel().
+			SetFilter(bson.M{"_id": item.CategoryID}).
+			SetUpdate(bson.M{"$set": bson.M{"rank": item.Rank}})
+		writes = append(writes, model)
+	}
+
+	if len(writes) > 0 {
+		_, err := db.CampaignCategoryCollection.BulkWrite(ctx, writes)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Failed to update ranks"})
+		}
+	}
+
+	return c.JSON(fiber.Map{"status": "Ranks updated successfully"})
+}

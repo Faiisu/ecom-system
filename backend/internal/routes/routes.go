@@ -19,6 +19,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/product-categories", handlers.GetProductCategories)
 	app.Delete("/product-categories/:id", handlers.DeleteProductCategory)
 	app.Post("/campaign-categories", handlers.AddCampaignCategory)
+	app.Patch("/campaign-categories/realign", handlers.RealignCampaignCategoryRanks)
 	app.Get("/campaign-categories", handlers.GetCampaignCategories)
 	app.Post("/cart", handlers.AddCartItem)
 	app.Get("/cart/:user_id", handlers.GetCartItems)
