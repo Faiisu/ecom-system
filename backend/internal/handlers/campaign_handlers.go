@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -294,8 +295,15 @@ func RealignCampaignCategoryRanks(c *fiber.Ctx) error {
 		if item.CategoryID == "" {
 			continue
 		}
+
+		objID, err := primitive.ObjectIDFromHex(item.CategoryID)
+		if err != nil {
+			// Skip invalid IDs or handle error
+			continue
+		}
+
 		model := mongo.NewUpdateOneModel().
-			SetFilter(bson.M{"_id": item.CategoryID}).
+			SetFilter(bson.M{"_id": objID}).
 			SetUpdate(bson.M{"$set": bson.M{"rank": item.Rank}})
 		writes = append(writes, model)
 	}
