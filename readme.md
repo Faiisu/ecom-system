@@ -9,7 +9,7 @@ This is the function design for the E-commerce campaigns system, the module can 
 ## Features
 - **Guest access:** Quick guest login to try the experience without sign-up friction.
 - **Campaign creation:** Build campaigns with names, descriptions, and multiple discount styles (fixed amount, percent, points, spend-and-save) plus limits and thresholds (value caps, every-X-get-Y).
-- **Targeting controls:** Attach campaigns to categories and set category priority to control discount sequence (change sequence and remove campaigns is not avaliable).
+- **Targeting controls:** Attach campaigns to categories and set category priority to control discount sequence (remove campaigns isn't avaliable).
 - **Product catalog:** Browse and search products by category to see how campaigns apply.
 - **Cart and checkout:** Add to cart, view detailed summary, and see discounts applied from active campaigns.
 
