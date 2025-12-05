@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaLayerGroup, FaTrash, FaTimes, FaCheck, FaBars } from 'react-icons/fa';
+import { FaLayerGroup, FaTimes, FaCheck, FaBars } from 'react-icons/fa';
 import {
     DndContext,
     closestCenter,
