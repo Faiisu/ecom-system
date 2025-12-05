@@ -143,7 +143,7 @@ const CartPage: React.FC = () => {
         }));
 
         currentCampaigns.forEach(campaign => {
-            // 1. Identify eligible items for this campaign
+            // Identify eligible items for this campaign
             const eligibleIndices: number[] = [];
 
             workingItems.forEach((item, index) => {
@@ -162,7 +162,7 @@ const CartPage: React.FC = () => {
                 }
             });
 
-            // 2. Calculate base amount from eligible items using CURRENT price
+            // Calculate base amount from eligible items using CURRENT price
             const eligibleAmount = eligibleIndices.reduce((sum, index) => {
                 const item = workingItems[index];
                 return sum + (item.current_unit_price * item.quantity);
@@ -189,8 +189,8 @@ const CartPage: React.FC = () => {
                         const guestPointsStr = localStorage.getItem('guestPoints');
                         let AvaliablePoint = guestPointsStr ? parseInt(guestPointsStr, 10) : 0;
 
-                        if (campaign.limit !== undefined && (AvaliablePoint / subtotal) * 100 > campaign.limit) {
-                            AvaliablePoint = campaign.limit * subtotal / 100;
+                        if (campaign.limit !== undefined && (AvaliablePoint / eligibleAmount) * 100 > campaign.limit) {
+                            AvaliablePoint = campaign.limit * eligibleAmount / 100;
                         }
                         discountAmount = AvaliablePoint;
                         break;
@@ -268,6 +268,7 @@ const CartPage: React.FC = () => {
             console.error('Error deleting item:', error);
             setError('Error deleting item');
         }
+        window.location.reload();
     };
 
     const handleCheckout = async () => {
